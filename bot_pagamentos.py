@@ -40,7 +40,7 @@ def cmd_help(message):
 
 
 def create_payment(value, client_name):
-    expire = datetime.datetime.now() + datetime.timedelta(days=1)
+    expire = datetime.datetime.now() + datetime.timedelta(minutes=30)
     expire = expire.strftime("%Y-%m-%dT%-H:%M:%S.000-03:00")
 
     description = f"Pagamento de {client_name}"
@@ -101,9 +101,8 @@ def capture_name(message):
 
     
     # Gerando log do pagamento
-    logger.info(f"Valor: R${value}, Cliente: {client_name}, Data e Hora: {datetime.datetime.now()}")
+    logger.info(f"Pix Valor: R${value}, Cliente: {client_name}, Data e Hora: {datetime.datetime.now()}")
     # Agendamento da verificação periódica do pagamento
-    print(value)
     verificar_pagamento(operation_number, message.chat.id, sent_message.message_id, client_name)
 
 
