@@ -4,7 +4,6 @@ import telebot
 import base64
 from PIL import Image
 from io import BytesIO
-# import schedule
 import time
 import logging
 
@@ -94,12 +93,12 @@ def capture_name(message):
     qrcode_output = qr_code_img.convert('RGB')
 
     sent_message = bot.send_photo(message.from_user.id, qrcode_output,
-                                  f'<code>{pix_copia_cola}</code>\n'
+                                  f'<code>{pix_copia_cola}</code>\n\n'
                                   f'Número de operação: {operation_number}\n'
-                                  f'Cliente: {client_name}',
+                                  f'Cliente: {client_name}\n\n'
+                                  f'Aguardando pagamento...',
                                   parse_mode='HTML')
 
-    
     # Gerando log do pagamento
     logger.info(f"Pix Valor: R${value}, Cliente: {client_name}, Data e Hora: {datetime.datetime.now()}")
     # Agendamento da verificação periódica do pagamento
