@@ -14,6 +14,11 @@ logger = logging.getLogger()
 sdk = mercadopago.SDK('TOKEN-MERCADOPAGO')
 bot = telebot.TeleBot('BOT-TELEGRAM')
 
+# Lista de IDs de chat autorizados
+AUTHORIZED_CHAT_IDS = [SEU_ID, SEU_ID]  # Adicione os IDs de chat autorizados aqui, pode ser grupo!
+def is_authorized_chat(chat_id):
+    return chat_id in AUTHORIZED_CHAT_IDS
+
 @bot.message_handler(commands=['start'])
 def cmd_start(message):
     start_message = "Bem-vindo ao Bot de Pagamentos da AlagoinhasTelecom!\n\n" \
@@ -51,7 +56,7 @@ def create_payment(value, client_name):
         "description": description,
         "date_of_expiration": f"{expire}",
         "payer": {
-            "email": 'joandson@alagoinhastelecom.com.br'
+            "email": 'pix@alagoinhastelecom.com.br'
         }
     }
     result = sdk.payment().create(payment_data)
@@ -60,8 +65,8 @@ def create_payment(value, client_name):
 
 
 def verificar_pagamento(operation_number, chat_id, message_id, client_name):
-    for _ in range(24):  # Executa a verificação por 2 minutos (24 vezes a cada 5 segundos)
-        time.sleep(5)  # Aguarda 5 segundos antes de cada verificação
+    for _ in range(24):  # Executa a verificação por 4 minutos (24 vezes a cada 10 segundos)
+        time.sleep(10)  # Aguarda 10 segundos antes de cada verificação
         result = sdk.payment().get(operation_number)
         status = result['response']['status']
         if status == 'approved':
@@ -76,8 +81,8 @@ def verificar_pagamento(operation_number, chat_id, message_id, client_name):
                                       f"{operation_number}/pix_account/pix_payment.pdf")
             bot.delete_message(chat_id, message_id)  # Apaga a mensagem com o QR code
             return  # Interrompe o loop e a função
-    logger.info(f"Pagamento de número {operation_number} não recebido após 2 minutos.")
-    bot.send_message(chat_id, "Pagamento não recebido após 2 minutos.")
+    logger.info(f"Pagamento de número {operation_number} não recebido após 4 minutos.")
+    bot.send_message(chat_id, "Pagamento não recebido após 4 minutos.")
     bot.delete_message(chat_id, message_id)  # Apaga a mensagem com o QR code
 
 
@@ -92,7 +97,10 @@ def capture_name(message):
     qr_code_img = Image.open(BytesIO(qr_code))
     qrcode_output = qr_code_img.convert('RGB')
 
-    sent_message = bot.send_photo(message.from_user.id, qrcode_output,
+    # Caso queira que o bot envie o qrcode no grupo ou no privado descomente a linha abaixo!
+    sent_message = bot.send_photo(message.chat.id, qrcode_output,
+    # Caso queira que o bot só envie o qrcode no privado descomente a linha abaixo e comente a de cima!
+    #sent_message = bot.send_photo(message.from_user.id, qrcode_output,
                                   f'<code>{pix_copia_cola}</code>\n\n'
                                   f'Número de operação: {operation_number}\n'
                                   f'Cliente: {client_name}\n\n'
@@ -138,6 +146,13 @@ def cmd_verificar(message):
 
 @bot.message_handler(commands=['pix'])
 def cmd_pix(message):
+    # Esta sessão inicia a verificação de id autorizado
+    if not is_authorized_chat(message.chat.id):
+        bot.reply_to(message, f"Acesso não autorizado.\n"
+                              f"Solicite a autorização usando seu chatid abaixo.\n\n"
+                              f"Seu ID: {message.chat.id}")
+        return
+    # Inicia a logica de geração do pix qrcode
     try:
         global value  # Adicione esta linha para utilizar a variável global "value"
         value = float(message.text.split()[1].replace(',', '.'))
